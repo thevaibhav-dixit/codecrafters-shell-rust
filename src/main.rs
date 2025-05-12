@@ -15,8 +15,9 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let command = input
-            .split_whitespace()
+        let mut parts = input.split_whitespace();
+
+        let command = parts
             .next()
             .unwrap_or("")
             .parse::<Command>()
@@ -27,12 +28,8 @@ fn main() {
 
         match command {
             Command::Echo => {
-                let args: Vec<&str> = input.split_whitespace().collect();
-                if args.len() > 1 {
-                    println!("{}", args[1..].join(" "));
-                } else {
-                    println!("echo: no arguments provided");
-                }
+                let args: Vec<&str> = parts.collect();
+                println!("{}", args.join(" "));
             }
             Command::Exit => {
                 exit(0);
