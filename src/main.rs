@@ -11,40 +11,24 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
 
-        // Wait for user inpu
+        // Wait for user input
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let mut parts = input.split_whitespace();
-
-        let command = parts
-            .next()
-            .unwrap_or("")
-            .parse::<Command>()
-            .unwrap_or_else(|_| {
-                println!("{}: command not found", input.trim());
-                Command::Unknown
-            });
-
+        let command = Command::parse(&input);
         match command {
-            Command::Echo => {
-                let args: Vec<&str> = parts.collect();
-                println!("{}", args.join(" "));
+            Command::Echo(args) => {
+                println!("{}", args);
             }
             Command::Exit => {
                 exit(0);
             }
-            Command::Type => {
-                let arg = parts.next().unwrap_or("");
-                let type_of_arg = arg.parse::<Command>().unwrap_or(Command::Unknown);
-                match type_of_arg {
-                    Command::Echo => println!("echo is a shell builtin"),
-                    Command::Exit => println!("exit is a shell builtin"),
-                    Command::Type => println!("type is a shell builtin"),
-                    Command::Unknown => println!("{}: not found", arg),
-                }
+            Command::Type(type_command) => {
+                type_command.run();
             }
-            Command::Unknown => {}
+            Command::Unknown(command) => {
+                println!("{}: command not found", command);
+            }
         }
     }
 }
