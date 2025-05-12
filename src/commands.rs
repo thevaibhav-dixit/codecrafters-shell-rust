@@ -40,7 +40,19 @@ impl<'a> Binary<'a> {
     }
 
     pub fn run(&self) {
-        std::process::Command::new(self.path).args(self.args.to_string().split_whitespace());
+        match std::process::Command::new(self.path)
+            .args(self.args.split_whitespace())
+            .output()
+        {
+            Ok(output) => {
+                if !output.stdout.is_empty() {
+                    print!("{}", String::from_utf8_lossy(&output.stdout));
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to execute {}: {}", self.path, e);
+            }
+        }
     }
 }
 
