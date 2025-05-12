@@ -1,6 +1,7 @@
 pub enum Command {
     Echo,
     Exit,
+    Type,
     Unknown,
 }
 
@@ -11,6 +12,7 @@ impl std::str::FromStr for Command {
         match input.trim() {
             "echo" => Ok(Command::Echo),
             "exit" => Ok(Command::Exit),
+            "type" => Ok(Command::Type),
             _ => Err(format!("{}: command not found", input.trim())),
         }
     }

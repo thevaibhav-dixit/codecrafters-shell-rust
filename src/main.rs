@@ -34,6 +34,16 @@ fn main() {
             Command::Exit => {
                 exit(0);
             }
+            Command::Type => {
+                let arg = parts.next().unwrap_or("");
+                let type_of_arg = arg.parse::<Command>().unwrap_or(Command::Unknown);
+                match type_of_arg {
+                    Command::Echo => println!("echo is a shell builtin"),
+                    Command::Exit => println!("exit is a shell builtin"),
+                    Command::Type => println!("type is a shell builtin"),
+                    Command::Unknown => println!("{}: not found", arg),
+                }
+            }
             Command::Unknown => {}
         }
     }
