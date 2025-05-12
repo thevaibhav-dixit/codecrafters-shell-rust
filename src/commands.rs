@@ -4,6 +4,7 @@ pub enum Command<'a> {
     Echo(&'a str),
     Exit,
     Type(TypeCommand<'a>),
+    Binary(Binary<'a>),
     Unknown(&'a str),
 }
 
@@ -18,8 +19,28 @@ impl<'a> Command<'a> {
             "echo" => Command::Echo(args),
             "exit" => Command::Exit,
             "type" => Command::Type(TypeCommand { target: args }),
-            _ => Command::Unknown(command),
+            _ => {
+                if args.is_empty() {
+                    Command::Unknown(command)
+                } else {
+                    Command::Binary(Binary::new(command, args))
+                }
+            }
         }
+    }
+}
+
+pub struct Binary<'a> {
+    path: &'a str,
+    args: &'a str,
+}
+impl<'a> Binary<'a> {
+    pub fn new(path: &'a str, args: &'a str) -> Self {
+        Binary { args, path }
+    }
+
+    pub fn run(&self) {
+        std::process::Command::new(self.path).args(self.args.to_string().split_whitespace());
     }
 }
 
@@ -36,7 +57,7 @@ impl<'a> TypeCommand<'a> {
                 println!("{} is a shell builtin", target);
                 return;
             }
-            Command::Unknown(_) => {}
+            Command::Unknown(_) | Command::Binary(_) => {}
         }
         if let Some(path) = find_in_path(target) {
             println!("{} is {}", target, path.display());

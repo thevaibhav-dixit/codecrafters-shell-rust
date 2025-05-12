@@ -26,6 +26,9 @@ fn main() {
             Command::Type(type_command) => {
                 type_command.run();
             }
+            Command::Binary(binary) => {
+                binary.run();
+            }
             Command::Unknown(command) => {
                 println!("{}: command not found", command);
             }
