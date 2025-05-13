@@ -7,6 +7,7 @@ pub enum Command<'a> {
     Binary(Binary<'a>),
     Unknown(&'a str),
     Pwd,
+    Cd(Cd<'a>),
 }
 
 impl<'a> Command<'a> {
@@ -21,6 +22,13 @@ impl<'a> Command<'a> {
             "exit" => Command::Exit,
             "type" => Command::Type(TypeCommand { target: args }),
             "pwd" => Command::Pwd,
+            "cd" => {
+                if args.is_empty() {
+                    Command::Cd(Cd { target: "/home" })
+                } else {
+                    Command::Cd(Cd { target: args })
+                }
+            }
             _ => {
                 if args.is_empty() {
                     Command::Unknown(command)
@@ -67,7 +75,7 @@ impl<'a> TypeCommand<'a> {
         let target = self.target;
 
         match Command::parse(target) {
-            Command::Echo(_) | Command::Exit | Command::Type(_) | Command::Pwd => {
+            Command::Echo(_) | Command::Exit | Command::Type(_) | Command::Pwd | Command::Cd(_) => {
                 println!("{} is a shell builtin", target);
                 return;
             }
@@ -95,4 +103,21 @@ fn is_executable(path: &std::path::Path) -> bool {
     std::fs::metadata(path)
         .map(|m| m.is_file() && (m.permissions().mode() & 0o111 != 0))
         .unwrap_or(false)
+}
+
+pub struct Cd<'a> {
+    pub target: &'a str,
+}
+
+impl<'a> Cd<'a> {
+    pub fn run(&self) {
+        let path = std::path::PathBuf::from(self.target);
+        if path.exists() {
+            if let Err(_e) = std::env::set_current_dir(&path) {
+                eprintln!("cd: not a directory: {}", self.target);
+            }
+        } else {
+            eprintln!("cd: {}: No such file or directory", self.target);
+        }
+    }
 }

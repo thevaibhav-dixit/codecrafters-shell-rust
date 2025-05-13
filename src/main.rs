@@ -33,6 +33,9 @@ fn main() {
                 let current_dir = std::env::current_dir().unwrap();
                 println!("{}", current_dir.display());
             }
+            Command::Cd(cd) => {
+                cd.run();
+            }
             Command::Unknown(command) => {
                 println!("{}: command not found", command);
             }
