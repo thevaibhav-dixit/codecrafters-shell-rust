@@ -1,12 +1,8 @@
 mod commands;
-
-use std::io::{self, Write};
-use std::process::exit;
-
 use commands::*;
+use std::io::{self, Write};
 
 fn main() {
-    // Uncomment this block to pass the first stage
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -16,28 +12,14 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
 
         let command = Command::parse(&input);
+
         match command {
-            Command::Echo(args) => {
-                println!("{}", args);
-            }
-            Command::Exit => {
-                exit(0);
-            }
-            Command::Type(type_command) => {
-                type_command.run();
-            }
-            Command::Binary(binary) => {
-                binary.run();
-            }
-            Command::Pwd => {
-                let current_dir = std::env::current_dir().unwrap();
-                println!("{}", current_dir.display());
-            }
-            Command::Cd(cd) => {
-                cd.run();
-            }
-            Command::Unknown(command) => {
-                println!("{}: command not found", command);
+            Command::Builtin(builtin) => match builtin {
+                _ => builtin.run(),
+            },
+            Command::Binary(binary) => binary.run(),
+            Command::Unknown(cmd) => {
+                println!("{}: command not found", cmd);
             }
         }
     }
