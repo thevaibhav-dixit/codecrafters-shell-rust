@@ -111,7 +111,12 @@ pub struct Cd<'a> {
 
 impl<'a> Cd<'a> {
     pub fn run(&self) {
-        let path = std::path::PathBuf::from(self.target);
+        let path = if self.target == "~" {
+            Self::get_home_dir()
+        } else {
+            std::path::PathBuf::from(self.target)
+        };
+
         if path.exists() {
             if let Err(_e) = std::env::set_current_dir(&path) {
                 eprintln!("cd: not a directory: {}", self.target);
@@ -119,5 +124,11 @@ impl<'a> Cd<'a> {
         } else {
             eprintln!("cd: {}: No such file or directory", self.target);
         }
+    }
+
+    fn get_home_dir() -> std::path::PathBuf {
+        std::env::var("HOME")
+            .map(|home| std::path::PathBuf::from(home))
+            .unwrap_or_else(|_| std::path::PathBuf::from("/home"))
     }
 }
