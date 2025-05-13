@@ -6,6 +6,7 @@ pub enum Command<'a> {
     Type(TypeCommand<'a>),
     Binary(Binary<'a>),
     Unknown(&'a str),
+    Pwd,
 }
 
 impl<'a> Command<'a> {
@@ -19,6 +20,7 @@ impl<'a> Command<'a> {
             "echo" => Command::Echo(args),
             "exit" => Command::Exit,
             "type" => Command::Type(TypeCommand { target: args }),
+            "pwd" => Command::Pwd,
             _ => {
                 if args.is_empty() {
                     Command::Unknown(command)
@@ -65,7 +67,7 @@ impl<'a> TypeCommand<'a> {
         let target = self.target;
 
         match Command::parse(target) {
-            Command::Echo(_) | Command::Exit | Command::Type(_) => {
+            Command::Echo(_) | Command::Exit | Command::Type(_) | Command::Pwd => {
                 println!("{} is a shell builtin", target);
                 return;
             }
@@ -78,6 +80,7 @@ impl<'a> TypeCommand<'a> {
         }
     }
 }
+
 fn find_in_path(command: &str) -> Option<std::path::PathBuf> {
     let path_var = std::env::var("PATH").unwrap_or_default();
     for dir in path_var.split(':') {
