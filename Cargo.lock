@@ -20,6 +20,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "shellish_parse",
  "thiserror",
 ]
 
@@ -40,6 +41,12 @@ checksum = "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "shellish_parse"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c29b912ad681a28566f37b936bba1f3580a93b9391c4a0b12cb1c6b4ed79973"
 
 [[package]]
 name = "syn"

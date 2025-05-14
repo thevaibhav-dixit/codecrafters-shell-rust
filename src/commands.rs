@@ -15,6 +15,7 @@ pub enum Builtin<'a> {
     Exit,
     Type(TypeCommand<'a>),
     Pwd,
+    Cat(&'a str),
     Cd(Cd<'a>),
 }
 
@@ -37,6 +38,20 @@ impl<'a> Runnable for Builtin<'a> {
             Builtin::Cd(cd) => {
                 cd.run();
             }
+            Builtin::Cat(args) => {
+                for args in args.split_whitespace() {
+                    let path = std::path::Path::new(args);
+                    if path.exists() {
+                        if let Ok(content) = std::fs::read_to_string(path) {
+                            print!("{}", content);
+                        } else {
+                            eprintln!("cat: {}: No such file or directory", args);
+                        }
+                    } else {
+                        eprintln!("cat: {}: No such file or directory", args);
+                    }
+                }
+            }
         }
     }
 }
@@ -46,6 +61,7 @@ impl<'a> Command<'a> {
         let trimmed = input.trim();
         let mut parts = trimmed.splitn(2, char::is_whitespace);
         let command = parts.next().unwrap_or("");
+
         let args = parts.next().unwrap_or("").trim();
         match command {
             "echo" => Command::Builtin(Builtin::Echo(args)),
@@ -56,6 +72,7 @@ impl<'a> Command<'a> {
                 let target = if args.is_empty() { "/home" } else { args };
                 Command::Builtin(Builtin::Cd(Cd { target }))
             }
+            "cat" => Command::Builtin(Builtin::Cat(args)),
             _ => {
                 if args.is_empty() {
                     Command::Unknown(command)
