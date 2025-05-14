@@ -4,106 +4,87 @@ pub trait Runnable {
     fn run(&self);
 }
 
-pub enum Command<'a> {
-    Builtin(Builtin<'a>),
-    Binary(Binary<'a>),
-    Unknown(&'a str),
+pub enum Command {
+    Builtin(Builtin),
+    Binary(Binary),
+    Unknown(String),
 }
 
-pub enum Builtin<'a> {
-    Echo(&'a str),
+pub enum Builtin {
+    Echo(String),
     Exit,
-    Type(TypeCommand<'a>),
+    Type(TypeCommand),
     Pwd,
-    Cat(&'a str),
-    Cd(Cd<'a>),
+    Cd(Cd),
 }
 
-impl<'a> Runnable for Builtin<'a> {
+impl Runnable for Builtin {
     fn run(&self) {
         match self {
-            Builtin::Echo(args) => {
-                println!("{}", args);
-            }
-            Builtin::Exit => {
-                std::process::exit(0);
-            }
-            Builtin::Type(type_cmd) => {
-                type_cmd.run();
-            }
-            Builtin::Pwd => {
-                let current_dir = std::env::current_dir().unwrap();
-                println!("{}", current_dir.display());
-            }
-            Builtin::Cd(cd) => {
-                cd.run();
-            }
-            Builtin::Cat(args) => {
-                for args in args.split_whitespace() {
-                    let path = std::path::Path::new(args);
-                    if path.exists() {
-                        if let Ok(content) = std::fs::read_to_string(path) {
-                            print!("{}", content);
-                        } else {
-                            eprintln!("cat: {}: No such file or directory", args);
-                        }
-                    } else {
-                        eprintln!("cat: {}: No such file or directory", args);
-                    }
-                }
-            }
+            Builtin::Echo(args) => println!("{}", args),
+            Builtin::Exit => std::process::exit(0),
+            Builtin::Type(type_cmd) => type_cmd.run(),
+            Builtin::Pwd => println!("{}", std::env::current_dir().unwrap().display()),
+            Builtin::Cd(cd) => cd.run(),
         }
     }
 }
 
-impl<'a> Command<'a> {
-    pub fn parse(input: &'a str) -> Self {
-        let trimmed = input.trim();
-        let mut parts = trimmed.splitn(2, char::is_whitespace);
-        let command = parts.next().unwrap_or("");
+impl Command {
+    pub fn parse(argv: Vec<String>) -> Self {
+        if argv.is_empty() {
+            return Command::Unknown("".into());
+        }
 
-        let args = parts.next().unwrap_or("").trim();
-        match command {
-            "echo" => Command::Builtin(Builtin::Echo(args)),
+        let command = &argv[0];
+        let args = argv[1..].to_vec();
+
+        match command.as_str() {
+            "echo" => Command::Builtin(Builtin::Echo(args.join(" "))),
             "exit" => Command::Builtin(Builtin::Exit),
-            "type" => Command::Builtin(Builtin::Type(TypeCommand { target: args })),
+            "type" => {
+                let target = args.get(0).cloned().unwrap_or_default();
+                Command::Builtin(Builtin::Type(TypeCommand { target }))
+            }
             "pwd" => Command::Builtin(Builtin::Pwd),
             "cd" => {
-                let target = if args.is_empty() { "/home" } else { args };
+                let target = args.get(0).cloned().unwrap_or_else(|| "/home".to_string());
                 Command::Builtin(Builtin::Cd(Cd { target }))
             }
-            "cat" => Command::Builtin(Builtin::Cat(args)),
             _ => {
                 if args.is_empty() {
-                    Command::Unknown(command)
+                    Command::Unknown(command.clone())
                 } else {
-                    Command::Binary(Binary::new(command, args))
+                    Command::Binary(Binary::new(command.clone(), args))
                 }
             }
         }
     }
 }
 
-pub struct Binary<'a> {
-    path: &'a str,
-    args: &'a str,
+pub struct Binary {
+    path: String,
+    args: Vec<String>,
 }
 
-impl<'a> Binary<'a> {
-    pub fn new(path: &'a str, args: &'a str) -> Self {
-        Binary { args, path }
+impl Binary {
+    pub fn new(path: String, args: Vec<String>) -> Self {
+        Self { path, args }
     }
 }
 
-impl<'a> Runnable for Binary<'a> {
+impl Runnable for Binary {
     fn run(&self) {
-        match std::process::Command::new(self.path)
-            .args(self.args.split_whitespace())
+        match std::process::Command::new(&self.path)
+            .args(&self.args)
             .output()
         {
             Ok(output) => {
                 if !output.stdout.is_empty() {
                     print!("{}", String::from_utf8_lossy(&output.stdout));
+                }
+                if !output.stderr.is_empty() {
+                    eprint!("{}", String::from_utf8_lossy(&output.stderr));
                 }
             }
             Err(e) => {
@@ -112,39 +93,35 @@ impl<'a> Runnable for Binary<'a> {
         }
     }
 }
-
-pub struct TypeCommand<'a> {
-    pub target: &'a str,
+pub struct TypeCommand {
+    pub target: String,
 }
 
-impl<'a> Runnable for TypeCommand<'a> {
+impl Runnable for TypeCommand {
     fn run(&self) {
-        let target = self.target;
-        match Command::parse(target) {
-            Command::Builtin(_) => {
-                println!("{} is a shell builtin", target);
-                return;
+        let target = self.target.clone();
+        match Command::parse(vec![target.clone()]) {
+            Command::Builtin(_) => println!("{} is a shell builtin", target),
+            _ => {
+                if let Some(path) = find_in_path(&target) {
+                    println!("{} is {}", target, path.display());
+                } else {
+                    println!("{}: not found", target);
+                }
             }
-            Command::Unknown(_) | Command::Binary(_) => {}
-        }
-
-        if let Some(path) = find_in_path(target) {
-            println!("{} is {}", target, path.display());
-        } else {
-            println!("{}: not found", target);
         }
     }
 }
 
 fn find_in_path(command: &str) -> Option<std::path::PathBuf> {
-    let path_var = std::env::var("PATH").unwrap_or_default();
-    for dir in path_var.split(':') {
+    std::env::var("PATH").ok()?.split(':').find_map(|dir| {
         let full_path = std::path::Path::new(dir).join(command);
         if is_executable(&full_path) {
-            return Some(full_path);
+            Some(full_path)
+        } else {
+            None
         }
-    }
-    None
+    })
 }
 
 fn is_executable(path: &std::path::Path) -> bool {
@@ -153,20 +130,20 @@ fn is_executable(path: &std::path::Path) -> bool {
         .unwrap_or(false)
 }
 
-pub struct Cd<'a> {
-    pub target: &'a str,
+pub struct Cd {
+    pub target: String,
 }
 
-impl<'a> Runnable for Cd<'a> {
+impl Runnable for Cd {
     fn run(&self) {
         let path = if self.target == "~" {
-            Self::get_home_dir()
+            Cd::get_home_dir()
         } else {
-            std::path::PathBuf::from(self.target)
+            std::path::PathBuf::from(&self.target)
         };
 
         if path.exists() {
-            if let Err(_e) = std::env::set_current_dir(&path) {
+            if let Err(_) = std::env::set_current_dir(&path) {
                 eprintln!("cd: not a directory: {}", self.target);
             }
         } else {
@@ -175,10 +152,10 @@ impl<'a> Runnable for Cd<'a> {
     }
 }
 
-impl<'a> Cd<'a> {
+impl Cd {
     fn get_home_dir() -> std::path::PathBuf {
         std::env::var("HOME")
-            .map(|home| std::path::PathBuf::from(home))
+            .map(std::path::PathBuf::from)
             .unwrap_or_else(|_| std::path::PathBuf::from("/home"))
     }
 }

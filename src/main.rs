@@ -13,11 +13,9 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let input = parse_input(&input)
-            .expect("Failed to parse input")
-            .join(" ");
+        let input = parse_input(&input).expect("Failed to parse input");
 
-        let command = Command::parse(&input);
+        let command = Command::parse(input);
 
         match command {
             Command::Builtin(builtin) => match builtin {
