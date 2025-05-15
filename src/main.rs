@@ -1,8 +1,10 @@
 mod commands;
+mod parser;
 
 use std::io::{self, Write};
 
 use commands::*;
+use parser::*;
 
 fn main() {
     loop {
@@ -13,22 +15,8 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let input = parse_input(&input).expect("Failed to parse input");
+        let args = Parser::parse(&input).expect("should parse");
 
-        let command = Command::parse(input);
-
-        match command {
-            Command::Builtin(builtin) => match builtin {
-                _ => builtin.run(),
-            },
-            Command::Binary(binary) => binary.run(),
-            Command::Unknown(cmd) => {
-                println!("{}: command not found", cmd);
-            }
-        }
+        Command::parse(args).run();
     }
-}
-
-fn parse_input(input: &str) -> Result<Vec<String>, shellish_parse::ParseError> {
-    shellish_parse::parse(input, shellish_parse::ParseOptions::default())
 }

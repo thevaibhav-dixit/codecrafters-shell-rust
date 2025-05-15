@@ -60,6 +60,14 @@ impl Command {
             }
         }
     }
+
+    pub fn run(&self) {
+        match self {
+            Command::Builtin(builtin) => builtin.run(),
+            Command::Binary(binary) => binary.run(),
+            Command::Unknown(cmd) => println!("{}: command not found", cmd),
+        }
+    }
 }
 
 pub struct Binary {
