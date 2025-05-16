@@ -12,7 +12,7 @@ pub enum Command {
 }
 
 pub enum Builtin {
-    Echo(String),
+    Echo((Vec<String>, Option<String>)),
     Exit,
     Type(TypeCommand),
     Pwd,
@@ -22,7 +22,17 @@ pub enum Builtin {
 impl Runnable for Builtin {
     fn run(&self) {
         match self {
-            Builtin::Echo(args) => println!("{}", args),
+            Builtin::Echo((args, output_target)) => {
+                let output = args.join(" ");
+                if let Some(file_name) = output_target {
+                    let mut file =
+                        std::fs::File::create(file_name).expect("should be able to open the file");
+                    file.write_all(output.as_bytes()).unwrap();
+                    file.write_all(b"\n").unwrap(); // ✅ required newline
+                } else {
+                    println!("{}", output);
+                }
+            }
             Builtin::Exit => std::process::exit(0),
             Builtin::Type(type_cmd) => type_cmd.run(),
             Builtin::Pwd => println!("{}", std::env::current_dir().unwrap().display()),
@@ -36,7 +46,7 @@ impl std::str::FromStr for Builtin {
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
-            "echo" => Ok(Builtin::Echo("".into())),
+            "echo" => Ok(Builtin::Echo((Vec::new(), None))),
             "exit" => Ok(Builtin::Exit),
             "type" => Ok(Builtin::Type(TypeCommand { target: "".into() })),
             "pwd" => Ok(Builtin::Pwd),
@@ -57,7 +67,7 @@ impl Command {
         let args = argv[1..].to_vec();
 
         match command.as_str() {
-            "echo" => Command::Builtin(Builtin::Echo(args.join(" "))),
+            "echo" => Command::Builtin(Builtin::Echo((args, output_target))),
             "exit" => Command::Builtin(Builtin::Exit),
             "type" => {
                 let target = args.get(0).cloned().unwrap_or_default();
@@ -115,9 +125,6 @@ impl Runnable for Binary {
                         std::fs::File::create(file_name).expect("should be able to open the file");
                     if !output.stdout.is_empty() {
                         file.write_all(&output.stdout).unwrap();
-                    }
-                    if !output.stderr.is_empty() {
-                        eprint!("{}", String::from_utf8_lossy(&output.stderr));
                     }
                 }
 
