@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 
 pub trait Runnable {
@@ -30,8 +31,24 @@ impl Runnable for Builtin {
     }
 }
 
+impl std::str::FromStr for Builtin {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        match input {
+            "echo" => Ok(Builtin::Echo("".into())),
+            "exit" => Ok(Builtin::Exit),
+            "type" => Ok(Builtin::Type(TypeCommand { target: "".into() })),
+            "pwd" => Ok(Builtin::Pwd),
+            "cd" => Ok(Builtin::Cd(Cd { target: "".into() })),
+            _ => Err(()),
+        }
+    }
+}
+
 impl Command {
-    pub fn parse(argv: Vec<String>) -> Self {
+    pub fn parse(input: (Vec<String>, Option<String>)) -> Self {
+        let (argv, output_target) = input;
         if argv.is_empty() {
             return Command::Unknown("".into());
         }
@@ -55,7 +72,7 @@ impl Command {
                 if args.is_empty() {
                     Command::Unknown(command.clone())
                 } else {
-                    Command::Binary(Binary::new(command.clone(), args))
+                    Command::Binary(Binary::new(command.clone(), args, output_target))
                 }
             }
         }
@@ -73,11 +90,16 @@ impl Command {
 pub struct Binary {
     path: String,
     args: Vec<String>,
+    output_target: Option<String>,
 }
 
 impl Binary {
-    pub fn new(path: String, args: Vec<String>) -> Self {
-        Self { path, args }
+    pub fn new(path: String, args: Vec<String>, output_target: Option<String>) -> Self {
+        Self {
+            path,
+            args,
+            output_target,
+        }
     }
 }
 
@@ -88,6 +110,17 @@ impl Runnable for Binary {
             .output()
         {
             Ok(output) => {
+                if let Some(file_name) = self.output_target.as_ref() {
+                    let mut file =
+                        std::fs::File::create(file_name).expect("should be able to open the file");
+                    if !output.stdout.is_empty() {
+                        file.write_all(&output.stdout).unwrap();
+                    }
+                    if !output.stderr.is_empty() {
+                        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+                    }
+                }
+
                 if !output.stdout.is_empty() {
                     print!("{}", String::from_utf8_lossy(&output.stdout));
                 }
@@ -101,6 +134,7 @@ impl Runnable for Binary {
         }
     }
 }
+
 pub struct TypeCommand {
     pub target: String,
 }
@@ -108,8 +142,8 @@ pub struct TypeCommand {
 impl Runnable for TypeCommand {
     fn run(&self) {
         let target = self.target.clone();
-        match Command::parse(vec![target.clone()]) {
-            Command::Builtin(_) => println!("{} is a shell builtin", target),
+        match target.parse::<Builtin>() {
+            Ok(_) => println!("{} is a shell builtin", target),
             _ => {
                 if let Some(path) = find_in_path(&target) {
                     println!("{} is {}", target, path.display());

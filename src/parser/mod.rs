@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(input: &str) -> Result<Vec<String>, String> {
+    pub fn parse(input: &str) -> Result<(Vec<String>, Option<String>), String> {
         let mut parser = Parser::new(input);
         while let Some(ch) = parser.chars.next() {
             parser.state = match parser.state {
@@ -39,10 +39,11 @@ impl<'a> Parser<'a> {
         }
 
         if !parser.current.is_empty() {
-            parser.args.push(parser.current);
+            parser.args.push(parser.current.clone());
         }
 
-        return Ok(parser.args);
+        let res = parser.handle_redirections();
+        Ok(res)
     }
 
     fn handle_normal(&mut self, ch: char) -> Result<ParseState, String> {
@@ -104,5 +105,24 @@ impl<'a> Parser<'a> {
                 Ok(ParseState::InDoubleQuote)
             }
         }
+    }
+
+    fn handle_redirections(&self) -> (Vec<String>, Option<String>) {
+        let mut iter = self.args.iter();
+        let mut args = Vec::new();
+        let mut target = None;
+        while let Some(val) = iter.next() {
+            if val == ">" || val == "1>" {
+                if let Some(file) = iter.next() {
+                    target = Some(file.clone());
+                } else {
+                    eprintln!("Error: No file specified for redirection");
+                    break;
+                }
+            } else {
+                args.push(val.clone());
+            }
+        }
+        (args, target)
     }
 }

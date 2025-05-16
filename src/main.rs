@@ -15,8 +15,8 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let args = Parser::parse(&input).expect("should parse");
+        let res = Parser::parse(&input).expect("should parse");
 
-        Command::parse(args).run();
+        Command::parse(res).run();
     }
 }
