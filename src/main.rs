@@ -33,8 +33,12 @@ fn main() -> Result<(), std::io::Error> {
             Box::new(io::stdout())
         };
 
-        let mut err_writer = if let Some(target) = err_target {
-            let file = std::fs::File::create(&target)?;
+        let mut err_writer = if let Some((target, append)) = err_target {
+            let file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .append(append)
+                .open(&target)?;
             Box::new(file) as Box<dyn Write>
         } else {
             Box::new(io::stderr())
