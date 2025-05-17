@@ -16,22 +16,16 @@ impl super::Runnable for Binary {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
-    ) {
-        match std::process::Command::new(&args[0])
-            .args(&args[1..])
-            .output()
-        {
-            Ok(output) => {
-                if !output.stdout.is_empty() {
-                    out_writer.write_all(&output.stdout).unwrap();
-                }
-                if !output.stderr.is_empty() {
-                    err_writer.write_all(&output.stderr).unwrap();
-                }
-            }
-            Err(e) => {
-                writeln!(err_writer, "Error executing command: {}", e).unwrap();
-            }
-        }
+    ) -> std::io::Result<()> {
+        let output = std::process::Command::new(
+            self.get_path()
+                .file_name()
+                .expect("should return file name"),
+        )
+        .args(&args[1..])
+        .output()?;
+
+        out_writer.write_all(&output.stdout)?;
+        err_writer.write_all(&output.stderr)
     }
 }

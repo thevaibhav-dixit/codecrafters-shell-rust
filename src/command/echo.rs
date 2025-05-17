@@ -5,10 +5,9 @@ impl super::Runnable for Echo {
         &self,
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
-    ) {
-        let args = &args[1..];
-
-        writeln!(out_writer, "{}", args.join(" "));
+        _err_writer: &mut dyn std::io::Write,
+    ) -> std::io::Result<()> {
+        let args = args[1..].join(" ") + "\n";
+        out_writer.write_all(args.as_bytes())
     }
 }

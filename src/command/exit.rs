@@ -4,15 +4,15 @@ impl super::Runnable for Exit {
     fn run(
         &self,
         args: Vec<String>,
-        out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
-    ) {
+        _out_writer: &mut dyn std::io::Write,
+        _err_writer: &mut dyn std::io::Write,
+    ) -> std::io::Result<()> {
         let args = &args[1..];
-        if args.is_empty() {
-            std::process::exit(0);
+        let code = if args.is_empty() {
+            0
         } else {
-            let code = args[0].parse::<i32>().unwrap_or(1);
-            std::process::exit(code);
-        }
+            args[0].parse::<i32>().unwrap_or(1)
+        };
+        std::process::exit(code);
     }
 }

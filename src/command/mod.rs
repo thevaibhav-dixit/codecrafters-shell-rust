@@ -18,7 +18,7 @@ pub trait Runnable {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
-    );
+    ) -> std::io::Result<()>;
 }
 
 pub enum Command {
@@ -33,13 +33,11 @@ impl Runnable for Command {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
-    ) {
+    ) -> std::io::Result<()> {
         match self {
             Command::Builtin(builtin) => builtin.run(args, out_writer, err_writer),
             Command::Binary(binary) => binary.run(args, out_writer, err_writer),
-            Command::Unknown => {
-                writeln!(err_writer, "{}: command not found", args[0]).unwrap();
-            }
+            Command::Unknown => writeln!(err_writer, "{}: command not found", args[0]),
         }
     }
 }
@@ -71,7 +69,7 @@ impl Runnable for Builtin {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
-    ) {
+    ) -> std::io::Result<()> {
         match self {
             Builtin::Echo(echo) => echo.run(args, out_writer, err_writer),
             Builtin::Exit(exit) => exit.run(args, out_writer, err_writer),

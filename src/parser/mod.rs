@@ -18,7 +18,13 @@ pub struct Parser<'a> {
     chars: Peekable<Chars<'a>>,
 }
 
-impl<'a> Parser<'a> {
+pub struct ParseOutput {
+    pub args: Vec<String>,
+    pub out_target: Option<String>,
+    pub err_target: Option<String>,
+}
+
+impl Parser<'_> {
     fn new(input: &str) -> Parser {
         Parser {
             args: Vec::new(),
@@ -28,7 +34,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(input: &str) -> Result<(Vec<String>, Option<String>, Option<String>), String> {
+    pub fn parse(input: &str) -> Result<ParseOutput, String> {
         let mut parser = Parser::new(input);
         while let Some(ch) = parser.chars.next() {
             parser.state = match parser.state {
@@ -107,7 +113,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn handle_redirections(&self) -> (Vec<String>, Option<String>, Option<String>) {
+    fn handle_redirections(&self) -> ParseOutput {
         let mut iter = self.args.iter();
         let mut args = Vec::new();
         let mut stdout_target = None;
@@ -131,6 +137,10 @@ impl<'a> Parser<'a> {
                 args.push(val.clone());
             }
         }
-        (args, stdout_target, stderr_target)
+        ParseOutput {
+            args,
+            out_target: stdout_target,
+            err_target: stderr_target,
+        }
     }
 }

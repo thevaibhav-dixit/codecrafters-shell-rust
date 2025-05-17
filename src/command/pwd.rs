@@ -3,10 +3,11 @@ pub struct Pwd;
 impl super::Runnable for Pwd {
     fn run(
         &self,
-        args: Vec<String>,
+        _args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
-    ) {
-        writeln!(out_writer, "{}", std::env::current_dir().unwrap().display()).unwrap();
+        _err_writer: &mut dyn std::io::Write,
+    ) -> std::io::Result<()> {
+        let current_dir = std::env::current_dir()?;
+        writeln!(out_writer, "{}", current_dir.display())
     }
 }

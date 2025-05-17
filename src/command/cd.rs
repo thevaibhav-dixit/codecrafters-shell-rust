@@ -12,9 +12,9 @@ impl super::Runnable for Cd {
     fn run(
         &self,
         args: Vec<String>,
-        out_writer: &mut dyn std::io::Write,
+        _out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
-    ) {
+    ) -> std::io::Result<()> {
         let path = if let Some(path) = args.get(1) {
             if path == "~" {
                 self.get_home_dir()
@@ -25,12 +25,13 @@ impl super::Runnable for Cd {
             self.get_home_dir()
         };
 
-        if path.exists() {
-            if let Err(e) = std::env::set_current_dir(&path) {
-                eprintln!("cd: {}: {}", path.display(), e);
-            }
-        } else {
-            eprintln!("cd: {}: No such file or directory", path.display());
+        if std::env::set_current_dir(&path).is_err() {
+            writeln!(
+                err_writer,
+                "cd: {}: No such file or directory",
+                path.display(),
+            )?
         }
+        Ok(())
     }
 }

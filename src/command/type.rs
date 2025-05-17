@@ -6,29 +6,25 @@ impl super::Runnable for Type {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
-    ) {
+    ) -> std::io::Result<()> {
         let args = &args[1..];
 
         if let Some(arg) = args.first() {
             match arg.parse::<super::Command>() {
                 Ok(super::Command::Builtin(_)) => {
-                    writeln!(out_writer, "{} is a shell builtin", arg)
-                        .expect("Should pass generally ");
+                    out_writer.write_all(format!("{} is a shell builtin\n", arg).as_bytes())
                 }
-                Ok(super::Command::Binary(path)) => {
-                    writeln!(out_writer, "{} is {}", arg, path.get_path().display())
-                        .expect("Should pass generally");
-                }
+                Ok(super::Command::Binary(path)) => out_writer
+                    .write_all(format!("{} is {}\n", arg, path.get_path().display()).as_bytes()),
                 Ok(super::Command::Unknown) => {
-                    writeln!(out_writer, "{}: not found", arg).expect("Should pass generally");
+                    out_writer.write_all(format!("{}: not found\n", arg).as_bytes())
                 }
                 Err(_) => {
-                    writeln!(out_writer, "{} is not a valid command", arg)
-                        .expect("Should pass generally");
+                    err_writer.write_all(format!("{} is not a valid command\n", arg).as_bytes())
                 }
             }
         } else {
-            writeln!(err_writer, "type: not enough arguments").expect("Should pass generally");
+            err_writer.write_all(b"type: not enough arguments")
         }
     }
 }
