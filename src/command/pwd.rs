@@ -7,6 +7,6 @@ impl super::Runnable for Pwd {
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
     ) {
-        write!(out_writer, "{}", std::env::current_dir().unwrap().display()).unwrap();
+        writeln!(out_writer, "{}", std::env::current_dir().unwrap().display()).unwrap();
     }
 }

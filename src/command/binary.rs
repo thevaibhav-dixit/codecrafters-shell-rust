@@ -1,11 +1,11 @@
-pub struct Binary(String);
+pub struct Binary(std::path::PathBuf);
 
 impl Binary {
-    pub fn new(command: String) -> Self {
+    pub fn new(command: std::path::PathBuf) -> Self {
         Self(command)
     }
 
-    pub fn get_command(&self) -> &str {
+    pub fn get_path(&self) -> &std::path::PathBuf {
         &self.0
     }
 }

@@ -9,6 +9,6 @@ impl super::Runnable for Echo {
     ) {
         let args = &args[1..];
 
-        write!(out_writer, "{}", args.join(" "));
+        writeln!(out_writer, "{}", args.join(" "));
     }
 }

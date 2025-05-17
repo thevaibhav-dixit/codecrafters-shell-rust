@@ -16,7 +16,7 @@ impl super::Runnable for Type {
                         .expect("Should pass generally ");
                 }
                 Ok(super::Command::Binary(path)) => {
-                    writeln!(out_writer, "{} is {}", arg, path.get_command())
+                    writeln!(out_writer, "{} is {}", arg, path.get_path().display())
                         .expect("Should pass generally");
                 }
                 Ok(super::Command::Unknown) => {
