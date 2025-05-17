@@ -22,8 +22,12 @@ fn main() -> Result<(), std::io::Error> {
         } = Parser::parse(&input)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
 
-        let mut out_writer = if let Some(target) = out_target {
-            let file = std::fs::File::create(&target)?;
+        let mut out_writer = if let Some((target, append)) = out_target {
+            let file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .append(append)
+                .open(&target)?;
             Box::new(file) as Box<dyn Write>
         } else {
             Box::new(io::stdout())

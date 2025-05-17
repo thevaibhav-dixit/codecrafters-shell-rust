@@ -20,10 +20,9 @@ pub struct Parser<'a> {
 
 pub struct ParseOutput {
     pub args: Vec<String>,
-    pub out_target: Option<String>,
+    pub out_target: Option<(String, bool)>,
     pub err_target: Option<String>,
 }
-
 impl Parser<'_> {
     fn new(input: &str) -> Parser {
         Parser {
@@ -118,23 +117,29 @@ impl Parser<'_> {
         let mut args = Vec::new();
         let mut stdout_target = None;
         let mut stderr_target = None;
+        let mut append = false;
         while let Some(val) = iter.next() {
-            if val == ">" || val == "1>" {
-                if let Some(file) = iter.next() {
-                    stdout_target = Some(file.clone());
-                } else {
-                    eprintln!("Error: No file specified for redirection");
-                    break;
+            match val.as_str() {
+                ">" | "1>" | ">>" | "1>>" => {
+                    if val.contains(">>") {
+                        append = true;
+                    }
+                    if let Some(file) = iter.next() {
+                        stdout_target = Some((file.clone(), append));
+                    } else {
+                        eprintln!("Error: No file specified for redirection");
+                        break;
+                    }
                 }
-            } else if val == "2>" {
-                if let Some(file) = iter.next() {
-                    stderr_target = Some(file.clone());
-                } else {
-                    eprintln!("Error: No file specified for redirection");
-                    break;
+                "2>" => {
+                    if let Some(file) = iter.next() {
+                        stderr_target = Some(file.clone());
+                    } else {
+                        eprintln!("Error: No file specified for redirection");
+                        break;
+                    }
                 }
-            } else {
-                args.push(val.clone());
+                _ => args.push(val.clone()),
             }
         }
         ParseOutput {
