@@ -12,7 +12,7 @@ pub enum Command {
 }
 
 pub enum Builtin {
-    Echo((Vec<String>, Option<String>)),
+    Echo((Vec<String>, Option<String>, Option<String>)),
     Exit,
     Type(TypeCommand),
     Pwd,
@@ -22,15 +22,25 @@ pub enum Builtin {
 impl Runnable for Builtin {
     fn run(&self) {
         match self {
-            Builtin::Echo((args, output_target)) => {
-                let output = args.join(" ");
+            Builtin::Echo((args, output_target, stderr_target)) => {
+                let output = args.join(" ") + "\n";
+
                 if let Some(file_name) = output_target {
+                    if let Some(parent) = std::path::Path::new(file_name).parent() {
+                        std::fs::create_dir_all(parent).unwrap();
+                    }
                     let mut file =
-                        std::fs::File::create(file_name).expect("should be able to open the file");
+                        std::fs::File::create(file_name).expect("could not open stdout file");
                     file.write_all(output.as_bytes()).unwrap();
-                    file.write_all(b"\n").unwrap(); // ✅ required newline
                 } else {
-                    println!("{}", output);
+                    print!("{}", output);
+                }
+
+                if let Some(file_name) = stderr_target {
+                    if let Some(parent) = std::path::Path::new(file_name).parent() {
+                        std::fs::create_dir_all(parent).unwrap();
+                    }
+                    std::fs::File::create(file_name).expect("could not open stderr file");
                 }
             }
             Builtin::Exit => std::process::exit(0),
@@ -41,12 +51,13 @@ impl Runnable for Builtin {
     }
 }
 
+// this is wrong.... will need to be fixed
 impl std::str::FromStr for Builtin {
     type Err = ();
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
-            "echo" => Ok(Builtin::Echo((Vec::new(), None))),
+            "echo" => Ok(Builtin::Echo((Vec::new(), None, None))),
             "exit" => Ok(Builtin::Exit),
             "type" => Ok(Builtin::Type(TypeCommand { target: "".into() })),
             "pwd" => Ok(Builtin::Pwd),
@@ -57,8 +68,8 @@ impl std::str::FromStr for Builtin {
 }
 
 impl Command {
-    pub fn parse(input: (Vec<String>, Option<String>)) -> Self {
-        let (argv, output_target) = input;
+    pub fn parse(input: (Vec<String>, Option<String>, Option<String>)) -> Self {
+        let (argv, stdout_target, stderr_target) = input;
         if argv.is_empty() {
             return Command::Unknown("".into());
         }
@@ -67,7 +78,7 @@ impl Command {
         let args = argv[1..].to_vec();
 
         match command.as_str() {
-            "echo" => Command::Builtin(Builtin::Echo((args, output_target))),
+            "echo" => Command::Builtin(Builtin::Echo((args, stdout_target, stderr_target))),
             "exit" => Command::Builtin(Builtin::Exit),
             "type" => {
                 let target = args.get(0).cloned().unwrap_or_default();
@@ -82,7 +93,12 @@ impl Command {
                 if args.is_empty() {
                     Command::Unknown(command.clone())
                 } else {
-                    Command::Binary(Binary::new(command.clone(), args, output_target))
+                    Command::Binary(Binary::new(
+                        command.clone(),
+                        args,
+                        stdout_target,
+                        stderr_target,
+                    ))
                 }
             }
         }
@@ -101,44 +117,70 @@ pub struct Binary {
     path: String,
     args: Vec<String>,
     output_target: Option<String>,
+    stderr_target: Option<String>,
 }
 
 impl Binary {
-    pub fn new(path: String, args: Vec<String>, output_target: Option<String>) -> Self {
+    pub fn new(
+        path: String,
+        args: Vec<String>,
+        output_target: Option<String>,
+        stderr_target: Option<String>,
+    ) -> Self {
         Self {
             path,
             args,
             output_target,
+            stderr_target,
         }
     }
 }
 
 impl Runnable for Binary {
     fn run(&self) {
+        if let Some(file_name) = &self.output_target {
+            if let Some(parent) = std::path::Path::new(file_name).parent() {
+                std::fs::create_dir_all(parent).unwrap();
+            }
+            std::fs::File::create(file_name).unwrap();
+        }
+
+        if let Some(file_name) = &self.stderr_target {
+            if let Some(parent) = std::path::Path::new(file_name).parent() {
+                std::fs::create_dir_all(parent).unwrap();
+            }
+            std::fs::File::create(file_name).unwrap();
+        }
+
         match std::process::Command::new(&self.path)
             .args(&self.args)
             .output()
         {
             Ok(output) => {
-                if let Some(file_name) = self.output_target.as_ref() {
-                    let mut file =
-                        std::fs::File::create(file_name).expect("should be able to open the file");
-                    if !output.stdout.is_empty() {
-                        file.write_all(&output.stdout).unwrap();
-                    }
+                if let Some(file_name) = &self.output_target {
+                    let mut file = std::fs::File::create(file_name).expect("cannot write stdout");
+                    file.write_all(&output.stdout).unwrap();
+                } else {
+                    print!("{}", String::from_utf8_lossy(&output.stdout));
                 }
 
-                if self.output_target.is_none() {
-                    if !output.stdout.is_empty() {
-                        print!("{}", String::from_utf8_lossy(&output.stdout));
-                    }
-                }
-                if !output.stderr.is_empty() {
+                if let Some(file_name) = &self.stderr_target {
+                    let mut file = std::fs::File::create(file_name).expect("cannot write stderr");
+                    file.write_all(&output.stderr).unwrap();
+                } else {
                     eprint!("{}", String::from_utf8_lossy(&output.stderr));
                 }
             }
+
             Err(e) => {
-                eprintln!("Failed to execute {}: {}", self.path, e);
+                let msg = format!("{}: {}\n", self.path, e);
+
+                if let Some(file_name) = &self.stderr_target {
+                    let mut file = std::fs::File::create(file_name).expect("cannot write stderr");
+                    file.write_all(msg.as_bytes()).unwrap();
+                } else {
+                    eprint!("{}", msg);
+                }
             }
         }
     }

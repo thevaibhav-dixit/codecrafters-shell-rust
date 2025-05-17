@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(input: &str) -> Result<(Vec<String>, Option<String>), String> {
+    pub fn parse(input: &str) -> Result<(Vec<String>, Option<String>, Option<String>), String> {
         let mut parser = Parser::new(input);
         while let Some(ch) = parser.chars.next() {
             parser.state = match parser.state {
@@ -107,14 +107,22 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn handle_redirections(&self) -> (Vec<String>, Option<String>) {
+    fn handle_redirections(&self) -> (Vec<String>, Option<String>, Option<String>) {
         let mut iter = self.args.iter();
         let mut args = Vec::new();
-        let mut target = None;
+        let mut stdout_target = None;
+        let mut stderr_target = None;
         while let Some(val) = iter.next() {
             if val == ">" || val == "1>" {
                 if let Some(file) = iter.next() {
-                    target = Some(file.clone());
+                    stdout_target = Some(file.clone());
+                } else {
+                    eprintln!("Error: No file specified for redirection");
+                    break;
+                }
+            } else if val == "2>" {
+                if let Some(file) = iter.next() {
+                    stderr_target = Some(file.clone());
                 } else {
                     eprintln!("Error: No file specified for redirection");
                     break;
@@ -123,6 +131,6 @@ impl<'a> Parser<'a> {
                 args.push(val.clone());
             }
         }
-        (args, target)
+        (args, stdout_target, stderr_target)
     }
 }
