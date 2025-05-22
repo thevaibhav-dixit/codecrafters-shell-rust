@@ -29,11 +29,35 @@ impl ShellCompleter {
         let mut commands = HashSet::new();
         commands.insert("echo ".to_string());
         commands.insert("exit ".to_string());
+        commands.insert("type ".to_string());
+
+        if let Some(paths) = std::env::var_os("PATH") {
+            for path in std::env::split_paths(&paths) {
+                if let Ok(entries) = std::fs::read_dir(path) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                            if path.is_file() && is_executable(&path) {
+                                commands.insert(file_name.to_string() + " ");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ShellCompleter {
             commands,
             highlighter: MatchingBracketHighlighter::new(),
         }
     }
+}
+
+fn is_executable(path: &std::path::Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::metadata(path)
+        .map(|m| m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
 }
 
 impl Helper for ShellCompleter {}
