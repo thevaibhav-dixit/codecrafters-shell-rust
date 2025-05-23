@@ -12,10 +12,11 @@ impl super::Runnable for History {
 
         let args = &args[1..];
         let mut start = 0;
+        let end = history.len();
 
         if args.len() > 0 {
             if let Ok(num) = args[0].parse::<usize>() {
-                start = num;
+                start = end - num;
             } else {
                 writeln!(out_writer, "Invalid argument: {}", args[0])?;
                 return Ok(());
