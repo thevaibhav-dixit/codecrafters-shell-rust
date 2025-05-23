@@ -18,7 +18,7 @@ impl super::Runnable for Type {
                 }
                 Ok(super::Command::Binary(path)) => out_writer
                     .write_all(format!("{} is {}\n", arg, path.get_path().display()).as_bytes()),
-                Ok(super::Command::Unknown) => {
+                Ok(super::Command::Unknown(_)) => {
                     out_writer.write_all(format!("{}: not found\n", arg).as_bytes())
                 }
                 Err(_) => {

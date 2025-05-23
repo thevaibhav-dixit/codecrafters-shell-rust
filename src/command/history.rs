@@ -10,8 +10,20 @@ impl super::Runnable for History {
     ) -> std::io::Result<()> {
         history.push(args.join(" "));
 
-        for (i, line) in history.iter().enumerate() {
-            write!(out_writer, "    {}  {}\n", i + 1, line)?;
+        let args = &args[1..];
+        let mut start = 0;
+
+        if args.len() > 0 {
+            if let Ok(num) = args[0].parse::<usize>() {
+                start = num;
+            } else {
+                writeln!(out_writer, "Invalid argument: {}", args[0])?;
+                return Ok(());
+            }
+        }
+
+        for (i, line) in history[start..].iter().enumerate() {
+            write!(out_writer, "    {}  {}\n", start + i + 1, line)?;
         }
 
         Ok(())

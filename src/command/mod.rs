@@ -27,7 +27,7 @@ pub trait Runnable {
 pub enum Command {
     Builtin(Builtin),
     Binary(Binary),
-    Unknown,
+    Unknown(String),
 }
 
 impl Runnable for Command {
@@ -41,7 +41,10 @@ impl Runnable for Command {
         match self {
             Command::Builtin(builtin) => builtin.run(args, out_writer, err_writer, history),
             Command::Binary(binary) => binary.run(args, out_writer, err_writer, history),
-            Command::Unknown => writeln!(err_writer, "{}: command not found", args[0]),
+            Command::Unknown(s) => {
+                history.push(s.to_string());
+                writeln!(err_writer, "{}: command not found", args[0])
+            }
         }
     }
 }
@@ -54,7 +57,7 @@ impl std::str::FromStr for Command {
         } else if find_in_path(s).is_some() {
             Ok(Command::Binary(Binary::new(find_in_path(s).unwrap())))
         } else {
-            Ok(Command::Unknown)
+            Ok(Command::Unknown(s.to_string()))
         }
     }
 }
