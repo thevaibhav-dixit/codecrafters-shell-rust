@@ -2,6 +2,7 @@ mod binary;
 mod cd;
 mod echo;
 mod exit;
+mod history;
 mod pwd;
 mod r#type;
 
@@ -9,6 +10,7 @@ use binary::Binary;
 use cd::Cd;
 use echo::Echo;
 use exit::Exit;
+use history::History;
 use pwd::Pwd;
 use r#type::Type;
 
@@ -61,6 +63,7 @@ pub enum Builtin {
     Type(Type),
     Pwd(Pwd),
     Cd(Cd),
+    History(History),
 }
 
 impl Runnable for Builtin {
@@ -76,6 +79,7 @@ impl Runnable for Builtin {
             Builtin::Type(ty) => ty.run(args, out_writer, err_writer),
             Builtin::Pwd(pwd) => pwd.run(args, out_writer, err_writer),
             Builtin::Cd(cd) => cd.run(args, out_writer, err_writer),
+            _ => unimplemented!(),
         }
     }
 }
@@ -90,6 +94,7 @@ impl std::str::FromStr for Builtin {
             "type" => Ok(Builtin::Type(Type)),
             "pwd" => Ok(Builtin::Pwd(Pwd)),
             "cd" => Ok(Builtin::Cd(Cd)),
+            "history" => Ok(Builtin::History(History)),
             _ => Err(()),
         }
     }
