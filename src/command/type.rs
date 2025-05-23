@@ -6,7 +6,9 @@ impl super::Runnable for Type {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
+        history: &mut Vec<String>,
     ) -> std::io::Result<()> {
+        history.push(args.join(" "));
         let args = &args[1..];
 
         if let Some(arg) = args.first() {

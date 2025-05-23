@@ -16,7 +16,9 @@ impl super::Runnable for Binary {
         args: Vec<String>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
+        history: &mut Vec<String>,
     ) -> std::io::Result<()> {
+        history.push(args.join(" "));
         let output = std::process::Command::new(
             self.get_path()
                 .file_name()

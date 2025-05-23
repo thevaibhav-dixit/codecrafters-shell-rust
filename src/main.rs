@@ -9,6 +9,7 @@ use input::*;
 use parser::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut history = Vec::new();
     let mut rl = ReadLine::new();
     loop {
         let readline = rl.readline("$ ");
@@ -46,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 if let Some(cmd) = args.first() {
                     if let Ok(cmd) = cmd.parse::<command::Command>() {
-                        let _ = cmd.run(args, &mut out_writer, &mut err_writer);
+                        let _ = cmd.run(args, &mut out_writer, &mut err_writer, &mut history);
                     } else {
                         writeln!(err_writer, "Error: Invalid command")?
                     }

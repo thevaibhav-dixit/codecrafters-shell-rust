@@ -14,7 +14,9 @@ impl super::Runnable for Cd {
         args: Vec<String>,
         _out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
+        history: &mut Vec<String>,
     ) -> std::io::Result<()> {
+        history.push(args.join(" "));
         let path = if let Some(path) = args.get(1) {
             if path == "~" {
                 self.get_home_dir()
