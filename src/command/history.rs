@@ -11,22 +11,14 @@ impl super::Runnable for History {
         history.push(args.join(" "));
 
         let args = &args[1..];
-        let mut start = 0;
-        let end = history.len();
-
-        if args.len() > 0 {
-            if let Ok(num) = args[0].parse::<usize>() {
-                start = end - num;
-            } else {
-                writeln!(out_writer, "Invalid argument: {}", args[0])?;
-                return Ok(());
-            }
-        }
+        let start = args
+            .get(0)
+            .and_then(|s| s.parse::<usize>().ok())
+            .map_or(0, |n| history.len().saturating_sub(n));
 
         for (i, line) in history[start..].iter().enumerate() {
-            write!(out_writer, "    {}  {}\n", start + i + 1, line)?;
+            writeln!(out_writer, "    {}  {}", start + i + 1, line)?;
         }
-
         Ok(())
     }
 }
