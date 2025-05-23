@@ -22,6 +22,7 @@ impl ShellCompleter {
         let mut commands = HashSet::new();
 
         commands.insert("exit".to_string());
+        commands.insert("history".to_string());
 
         if let Some(paths) = std::env::var_os("PATH") {
             for path in std::env::split_paths(&paths) {
