@@ -20,9 +20,8 @@ struct ShellCompleter {
 impl ShellCompleter {
     fn new() -> Self {
         let mut commands = HashSet::new();
-        commands.insert("echo ".to_string());
-        commands.insert("exit ".to_string());
-        commands.insert("type ".to_string());
+
+        commands.insert("exit".to_string());
 
         if let Some(paths) = std::env::var_os("PATH") {
             for path in std::env::split_paths(&paths) {
@@ -31,7 +30,7 @@ impl ShellCompleter {
                         let path = entry.path();
                         if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
                             if path.is_file() && is_executable(&path) {
-                                commands.insert(file_name.to_string() + " ");
+                                commands.insert(file_name.to_string());
                             }
                         }
                     }
@@ -69,15 +68,28 @@ impl Completer for ShellCompleter {
         if line_parts.is_empty() || (line_parts.len() == 1 && !line.ends_with(' ')) {
             let prefix = line_parts.get(0).map_or("", |s| *s);
 
-            let candidates: Vec<Pair> = self
+            let mut matches: Vec<_> = self
                 .commands
                 .iter()
                 .filter(|cmd| cmd.starts_with(prefix))
-                .map(|cmd| Pair {
-                    display: cmd.clone(),
-                    replacement: cmd.clone(),
-                })
                 .collect();
+
+            matches.sort();
+
+            let candidates: Vec<Pair> = if matches.len() == 1 {
+                vec![Pair {
+                    display: matches[0].clone(),
+                    replacement: format!("{} ", matches[0]),
+                }]
+            } else {
+                matches
+                    .into_iter()
+                    .map(|cmd| Pair {
+                        display: cmd.clone(),
+                        replacement: cmd.to_string(),
+                    })
+                    .collect()
+            };
 
             let start = line[..pos].rfind(' ').map_or(0, |i| i + 1);
 
