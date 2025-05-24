@@ -1,12 +1,12 @@
 pub struct History;
 
-impl super::Runnable for History {
+impl<W: std::io::Write> super::Runnable<W> for History {
     fn run(
         &self,
         args: Vec<String>,
         _input: Option<&mut dyn std::io::Read>,
-        out_writer: &mut dyn std::io::Write,
-        _err_writer: &mut dyn std::io::Write,
+        out_writer: &mut W,
+        _err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         history.push(args.join(" "));

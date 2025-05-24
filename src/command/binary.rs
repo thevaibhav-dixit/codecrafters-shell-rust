@@ -19,22 +19,20 @@ impl Binary {
             .and_then(|n| n.to_str())
             .unwrap_or("");
 
-        let long_running_commands = [
-            "tail", "watch", "top", "htop", "less", "more", "vi", "vim", "nano",
-        ];
+        let long_running_commands = ["watch", "top", "htop", "less", "more", "vi", "vim", "nano"];
 
         long_running_commands.contains(&command_name)
             || args.iter().any(|arg| arg == "-f" || arg == "--follow")
     }
 }
 
-impl super::Runnable for Binary {
+impl<W: std::io::Write> super::Runnable<W> for Binary {
     fn run(
         &self,
         args: Vec<String>,
         input: Option<&mut dyn std::io::Read>,
-        out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
+        out_writer: &mut W,
+        err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         history.push(args.join(" "));
@@ -75,7 +73,6 @@ impl super::Runnable for Binary {
                     .expect("should return file name"),
             )
             .args(&args[1..])
-            .stdin(Stdio::null())
             .output()?;
 
             out_writer.write_all(&output.stdout)?;

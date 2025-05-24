@@ -14,13 +14,16 @@ use history::History;
 use pwd::Pwd;
 use r#type::Type;
 
-pub trait Runnable {
+pub trait Runnable<W>
+where
+    W: std::io::Write,
+{
     fn run(
         &self,
         args: Vec<String>,
         input: Option<&mut dyn std::io::Read>,
-        out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
+        out_writer: &mut W,
+        err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()>;
 }
@@ -31,13 +34,13 @@ pub enum Command {
     Unknown(String),
 }
 
-impl Runnable for Command {
+impl<W: std::io::Write> Runnable<W> for Command {
     fn run(
         &self,
         args: Vec<String>,
         input: Option<&mut dyn std::io::Read>,
-        out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
+        out_writer: &mut W,
+        err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         match self {
@@ -73,13 +76,13 @@ pub enum Builtin {
     History(History),
 }
 
-impl Runnable for Builtin {
+impl<W: std::io::Write> Runnable<W> for Builtin {
     fn run(
         &self,
         args: Vec<String>,
         input: Option<&mut dyn std::io::Read>,
-        out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
+        out_writer: &mut W,
+        err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         match self {

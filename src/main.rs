@@ -40,8 +40,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let mut input: Box<dyn std::io::Read> = Box::new(io::empty());
 
                 for (i, args) in commands.iter().enumerate() {
-                    let mut out_writer: Box<dyn Write> = if i == commands.len() - 1 {
-                        if let Some((ref target, append)) = out_target {
+                    let (mut out_writer, next_input): (
+                        Box<dyn Write>,
+                        Option<Box<dyn std::io::Read>>,
+                    ) = if i == commands.len() - 1 {
+                        let writer: Box<dyn Write> = if let Some((ref target, append)) = out_target
+                        {
                             let file = std::fs::OpenOptions::new()
                                 .write(true)
                                 .create(true)
@@ -50,11 +54,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             Box::new(file)
                         } else {
                             Box::new(io::stdout())
-                        }
+                        };
+                        (writer, None)
                     } else {
                         let (reader, writer) = os_pipe::pipe()?;
-                        input = Box::new(reader);
-                        Box::new(writer)
+                        (Box::new(writer), Some(Box::new(reader)))
                     };
 
                     if let Some(cmd) = args.first() {
@@ -75,6 +79,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     &mut err_writer,
                                     &mut history,
                                 )?;
+                            }
+
+                            if let Some(next_input) = next_input {
+                                input = next_input;
                             }
                         } else {
                             writeln!(err_writer, "Error: Invalid command")?;

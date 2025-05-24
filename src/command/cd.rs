@@ -8,13 +8,13 @@ impl Cd {
     }
 }
 
-impl super::Runnable for Cd {
+impl<W: std::io::Write> super::Runnable<W> for Cd {
     fn run(
         &self,
         args: Vec<String>,
         _input: Option<&mut dyn std::io::Read>,
-        _out_writer: &mut dyn std::io::Write,
-        err_writer: &mut dyn std::io::Write,
+        _out_writer: &mut W,
+        err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         history.push(args.join(" "));

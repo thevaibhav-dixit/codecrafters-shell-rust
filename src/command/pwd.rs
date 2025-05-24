@@ -1,12 +1,12 @@
 pub struct Pwd;
 
-impl super::Runnable for Pwd {
+impl<W: std::io::Write> super::Runnable<W> for Pwd {
     fn run(
         &self,
         _args: Vec<String>,
         _input: Option<&mut dyn std::io::Read>,
-        out_writer: &mut dyn std::io::Write,
-        _err_writer: &mut dyn std::io::Write,
+        out_writer: &mut W,
+        _err_writer: &mut W,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         history.push("pwd".to_string());
