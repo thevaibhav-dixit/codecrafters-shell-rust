@@ -24,8 +24,7 @@ impl Binary {
         ];
 
         long_running_commands.contains(&command_name)
-            || args.contains(&"-f".to_string())
-            || args.contains(&"--follow".to_string())
+            || args.iter().any(|arg| arg == "-f" || arg == "--follow")
     }
 }
 
@@ -45,7 +44,6 @@ impl super::Runnable for Binary {
             input.read_to_string(&mut piped_input)?;
         }
 
-        // For long-running commands, inherit stdio to show output directly
         if self.is_long_running_command(&args) {
             let mut cmd = Command::new(
                 self.get_path()
@@ -55,33 +53,21 @@ impl super::Runnable for Binary {
 
             cmd.args(&args[1..]);
 
-            // Handle piped input
             if !piped_input.is_empty() {
                 cmd.stdin(Stdio::piped());
             } else {
-                cmd.stdin(Stdio::inherit()); // Allow interactive input if needed
+                cmd.stdin(Stdio::inherit());
             }
 
-            // Inherit stdout and stderr so output goes directly to terminal
             cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
             let mut child = cmd.spawn()?;
 
-            // Send piped input if we have it
-            if !piped_input.is_empty() {
-                if let Some(mut stdin) = child.stdin.take() {
-                    stdin.write_all(piped_input.as_bytes())?;
-                    drop(stdin);
-                }
-            }
-
-            // Wait for the process to complete (or be interrupted)
             let _ = child.wait()?;
 
             return Ok(());
         }
 
-        // Handle regular commands (your existing logic)
         if piped_input.is_empty() {
             let output = Command::new(
                 self.get_path()
@@ -89,7 +75,7 @@ impl super::Runnable for Binary {
                     .expect("should return file name"),
             )
             .args(&args[1..])
-            .stdin(Stdio::null()) // Explicitly close stdin
+            .stdin(Stdio::null())
             .output()?;
 
             out_writer.write_all(&output.stdout)?;
