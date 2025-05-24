@@ -4,6 +4,7 @@ impl super::Runnable for History {
     fn run(
         &self,
         args: Vec<String>,
+        _input: Option<&mut dyn std::io::Read>,
         out_writer: &mut dyn std::io::Write,
         _err_writer: &mut dyn std::io::Write,
         history: &mut Vec<String>,

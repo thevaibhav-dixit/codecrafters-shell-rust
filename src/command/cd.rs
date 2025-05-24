@@ -12,6 +12,7 @@ impl super::Runnable for Cd {
     fn run(
         &self,
         args: Vec<String>,
+        _input: Option<&mut dyn std::io::Read>,
         _out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
         history: &mut Vec<String>,

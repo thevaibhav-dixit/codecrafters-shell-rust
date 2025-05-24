@@ -1,6 +1,5 @@
 use std::iter::Peekable;
 use std::str::Chars;
-
 /// Represents the various states the parser can be in
 #[derive(Debug)]
 enum ParseState {
@@ -19,7 +18,7 @@ pub struct Parser<'a> {
 }
 
 pub struct ParseOutput {
-    pub args: Vec<String>,
+    pub commands: Vec<Vec<String>>,
     pub out_target: Option<(String, bool)>,
     pub err_target: Option<(String, bool)>,
 }
@@ -113,13 +112,19 @@ impl Parser<'_> {
     }
 
     fn handle_redirections(&self) -> ParseOutput {
-        let mut iter = self.args.iter();
+        let mut commands = Vec::new();
         let mut args = Vec::new();
         let mut stdout_target = None;
         let mut stderr_target = None;
 
+        let mut iter = self.args.iter();
         while let Some(val) = iter.next() {
             match val.as_str() {
+                "|" => {
+                    if !args.is_empty() {
+                        commands.push(std::mem::take(&mut args));
+                    }
+                }
                 ">" | "1>" | ">>" | "1>>" => {
                     let mut append = false;
                     if val.contains(">>") {
@@ -147,8 +152,13 @@ impl Parser<'_> {
                 _ => args.push(val.clone()),
             }
         }
+
+        if !args.is_empty() {
+            commands.push(std::mem::take(&mut args));
+        }
+
         ParseOutput {
-            args,
+            commands,
             out_target: stdout_target,
             err_target: stderr_target,
         }

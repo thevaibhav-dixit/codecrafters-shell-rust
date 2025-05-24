@@ -18,6 +18,7 @@ pub trait Runnable {
     fn run(
         &self,
         args: Vec<String>,
+        input: Option<&mut dyn std::io::Read>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
         history: &mut Vec<String>,
@@ -34,13 +35,14 @@ impl Runnable for Command {
     fn run(
         &self,
         args: Vec<String>,
+        input: Option<&mut dyn std::io::Read>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         match self {
-            Command::Builtin(builtin) => builtin.run(args, out_writer, err_writer, history),
-            Command::Binary(binary) => binary.run(args, out_writer, err_writer, history),
+            Command::Builtin(builtin) => builtin.run(args, input, out_writer, err_writer, history),
+            Command::Binary(binary) => binary.run(args, input, out_writer, err_writer, history),
             Command::Unknown(s) => {
                 history.push(s.to_string());
                 writeln!(err_writer, "{}: command not found", args[0])
@@ -75,17 +77,18 @@ impl Runnable for Builtin {
     fn run(
         &self,
         args: Vec<String>,
+        input: Option<&mut dyn std::io::Read>,
         out_writer: &mut dyn std::io::Write,
         err_writer: &mut dyn std::io::Write,
         history: &mut Vec<String>,
     ) -> std::io::Result<()> {
         match self {
-            Builtin::Echo(echo) => echo.run(args, out_writer, err_writer, history),
-            Builtin::Exit(exit) => exit.run(args, out_writer, err_writer, history),
-            Builtin::Type(ty) => ty.run(args, out_writer, err_writer, history),
-            Builtin::Pwd(pwd) => pwd.run(args, out_writer, err_writer, history),
-            Builtin::Cd(cd) => cd.run(args, out_writer, err_writer, history),
-            Builtin::History(hist) => hist.run(args, out_writer, err_writer, history),
+            Builtin::Echo(echo) => echo.run(args, input, out_writer, err_writer, history),
+            Builtin::Exit(exit) => exit.run(args, input, out_writer, err_writer, history),
+            Builtin::Type(ty) => ty.run(args, input, out_writer, err_writer, history),
+            Builtin::Pwd(pwd) => pwd.run(args, input, out_writer, err_writer, history),
+            Builtin::Cd(cd) => cd.run(args, input, out_writer, err_writer, history),
+            Builtin::History(hist) => hist.run(args, input, out_writer, err_writer, history),
         }
     }
 }
