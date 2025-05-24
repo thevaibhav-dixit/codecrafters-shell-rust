@@ -160,4 +160,8 @@ impl ReadLine {
     pub fn readline(&mut self, prompt: &str) -> Result<String, ReadlineError> {
         self.rl.readline(prompt)
     }
+
+    pub fn add_history(&mut self, line: &str) {
+        let _ = self.rl.add_history_entry(line);
+    }
 }

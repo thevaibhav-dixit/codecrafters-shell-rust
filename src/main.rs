@@ -16,6 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match readline {
             Ok(input) => {
+                rl.add_history(&input); // add own readline implmentation in future to remove deps
+                                        // on rustyline
+
                 let ParseOutput {
                     args,
                     out_target,
